@@ -379,6 +379,7 @@ def processing_chunks(chunkId_chunkDoc_list,graph,uri, userName, password, datab
       
   update_embedding_create_vector_index( graph, chunkId_chunkDoc_list, file_name)
   logging.info("Get graph document list from models")
+  # 从llm获取图谱
   graph_documents =  get_graph_from_llm(model, chunkId_chunkDoc_list, allowedNodes, allowedRelationship)
   cleaned_graph_documents = handle_backticks_nodes_relationship_id_type(graph_documents)
   save_graphDocuments_in_neo4j(graph, cleaned_graph_documents)

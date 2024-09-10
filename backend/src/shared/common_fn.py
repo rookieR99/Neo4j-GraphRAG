@@ -11,6 +11,7 @@ from typing import List
 import re
 import os
 from pathlib import Path
+from modelscope import snapshot_download
 from langchain_openai import ChatOpenAI
 from langchain_google_vertexai import ChatVertexAI
 from langchain_groq import ChatGroq
@@ -75,7 +76,18 @@ def create_graph_database_connection(uri, userName, password, database):
 
 
 def load_embedding_model(embedding_model_name: str):
-    if embedding_model_name == "openai":
+    if embedding_model_name.startswith("iic"):
+        local_dir = "../data/embedding/"
+        if not os.path.exists(local_dir):
+            model_dir = snapshot_download(embedding_model_name, local_dir=local_dir)
+        else:
+            model_dir = snapshot_download(embedding_model_name, local_files_only=True, local_dir=local_dir)
+
+        # embeddings = SentenceTransformerEmbeddings(model_name=model_dir, trust_remote_code=True)
+        embeddings = SentenceTransformerEmbeddings(model_name=model_dir)
+        dimension = 768
+        logging.info(f"Embedding: Using modelscope Embeddings{embedding_model_name} , Dimension:{dimension}")
+    elif embedding_model_name == "openai":
         embeddings = OpenAIEmbeddings()
         dimension = 1536
         logging.info(f"Embedding: Using OpenAI Embeddings , Dimension:{dimension}")

@@ -8,24 +8,76 @@ from langchain_google_vertexai import HarmBlockThreshold, HarmCategory
 from langchain_experimental.graph_transformers.diffbot import DiffbotGraphTransformer
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
-from langchain_experimental.graph_transformers import LLMGraphTransformer
+# from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_anthropic import ChatAnthropic
 from langchain_fireworks import ChatFireworks
 from langchain_aws import ChatBedrock
-from langchain_community.chat_models import ChatOllama
+from langchain_community.chat_models import ChatOllama, ChatTongyi
 import boto3
 import google.auth
+
+from src.graph_transformers.llm import LLMGraphTransformer
 from src.shared.constants import MODEL_VERSIONS
 
 
-def get_llm(model: str):
+def get_llm(model_version: str):
     """Retrieve the specified language model based on the model name."""
-    env_key = "LLM_MODEL_CONFIG_" + model
+    env_key = "LLM_MODEL_CONFIG_" + model_version
     env_value = os.environ.get(env_key)
     logging.info("Model: {}".format(env_key))
-    if "gemini" in model:
+    model_name = MODEL_VERSIONS[model_version]
+    if "Ollama" in model_version:
+        # model_name, base_url = env_value.split(",")
+        llm = ChatOpenAI(api_key=os.environ.get('OLLAMA_API_KEY'),
+                         base_url=os.environ.get('OLLAMA_API_URL'),
+                         model=model_name,
+                         # top_p=0.7,
+                         temperature=0.98)
+    elif "glm" in MODEL_VERSIONS[model_version]:
+        llm = ChatOpenAI(api_key=os.environ.get('ZHIPUAI_API_KEY'),
+                         base_url=os.environ.get('ZHIPUAI_API_URL'),
+                         model=model_name,
+                         # top_p=0.7,
+                         temperature=0.98)
+
+    elif "moonshot" in MODEL_VERSIONS[model_version]:
+        llm = ChatOpenAI(api_key=os.environ.get('MOONSHOT_API_KEY'),
+                         base_url=os.environ.get('MOONSHOT_API_URL'),
+                         model=model_name,
+                         top_p=0.7,
+                         temperature=0.95)
+    elif "Baichuan" in MODEL_VERSIONS[model_version]:
+        llm = ChatOpenAI(api_key=os.environ.get('BAICHUAN_API_KEY'),
+                         base_url=os.environ.get('BAICHUAN_API_URL'),
+                         model=model_name,
+                         # top_p=0.7,
+                         temperature=0.95)
+    elif "yi-large" in MODEL_VERSIONS[model_version]:
+        llm = ChatOpenAI(api_key=os.environ.get('LINGYIWANWU_API_KEY'),
+                         base_url=os.environ.get('LINGYIWANWU_API_URL'),
+                         model=model_name,
+                         top_p=0.7,
+                         temperature=0.95)
+    elif "deepseek" in MODEL_VERSIONS[model_version]:
+        llm = ChatOpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'),
+                         base_url=os.environ.get('DEEPSEEK_API_URL'),
+                         model=model_name,
+                         top_p=0.7,
+                         temperature=0.95)
+    elif "qwen" in MODEL_VERSIONS[model_version]:
+        llm = ChatTongyi(
+            model = model_name
+        )
+    elif "Doubao" in MODEL_VERSIONS[model_version]:
+        llm = ChatOpenAI(api_key=os.environ.get('DOUBAO_API_KEY'),
+                         base_url=os.environ.get('DOUBAO_API_URL'),
+                         model=os.environ.get('ENDPOINT_ID'),
+                         # top_p=0.7,
+                         # temperature=0.95
+                         )
+    elif "gemini" in model_version:
         credentials, project_id = google.auth.default()
-        model_name = MODEL_VERSIONS[model]
+        model_name = MODEL_VERSIONS[model_version]
         llm = ChatVertexAI(
             model_name=model_name,
             convert_system_message_to_human=True,
@@ -40,15 +92,15 @@ def get_llm(model: str):
                 HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
             },
         )
-    elif "openai" in model:
-        model_name = MODEL_VERSIONS[model]
+    elif "openai" in model_version:
+        model_name = MODEL_VERSIONS[model_version]
         llm = ChatOpenAI(
             api_key=os.environ.get("OPENAI_API_KEY"),
             model=model_name,
             temperature=0,
         )
 
-    elif "azure" in model:
+    elif "azure" in model_version:
         model_name, api_endpoint, api_key, api_version = env_value.split(",")
         llm = AzureChatOpenAI(
             api_key=api_key,
@@ -60,21 +112,21 @@ def get_llm(model: str):
             timeout=None,
         )
 
-    elif "anthropic" in model:
+    elif "anthropic" in model_version:
         model_name, api_key = env_value.split(",")
         llm = ChatAnthropic(
             api_key=api_key, model=model_name, temperature=0, timeout=None
         )
 
-    elif "fireworks" in model:
+    elif "fireworks" in model_version:
         model_name, api_key = env_value.split(",")
         llm = ChatFireworks(api_key=api_key, model=model_name)
 
-    elif "groq" in model:
+    elif "groq" in model_version:
         model_name, base_url, api_key = env_value.split(",")
         llm = ChatGroq(api_key=api_key, model_name=model_name, temperature=0)
 
-    elif "bedrock" in model:
+    elif "bedrock" in model_version:
         model_name, aws_access_key, aws_secret_key, region_name = env_value.split(",")
         bedrock_client = boto3.client(
             service_name="bedrock-runtime",
@@ -87,27 +139,13 @@ def get_llm(model: str):
             client=bedrock_client, model_id=model_name, model_kwargs=dict(temperature=0)
         )
 
-    elif "ollama" in model:
-        model_name, base_url = env_value.split(",")
-        llm = ChatOllama(base_url=base_url, model=model_name)
-
-    elif "diffbot" in model:
+    else:
         model_name = "diffbot"
         llm = DiffbotGraphTransformer(
             diffbot_api_key=os.environ.get("DIFFBOT_API_KEY"),
             extract_types=["entities", "facts"],
         )
-    
-    else: 
-        model_name, api_endpoint, api_key = env_value.split(",")
-        llm = ChatOpenAI(
-            api_key=api_key,
-            base_url=api_endpoint,
-            model=model_name,
-            temperature=0,
-        )
-            
-    logging.info(f"Model created - Model Version: {model}")
+    logging.info(f"Model created - Model Version: {model_version}")
     return llm, model_name
 
 
@@ -141,7 +179,7 @@ def get_combined_chunks(chunkId_chunkDoc_list):
 
 
 def get_graph_document_list(
-    llm, combined_chunk_document_list, allowedNodes, allowedRelationship
+    llm, combined_chunk_document_list, allowedNodes, allowedRelationship, use_function=True
 ):
     futures = []
     graph_document_list = []
@@ -158,6 +196,7 @@ def get_graph_document_list(
             node_properties=node_properties,
             allowed_nodes=allowedNodes,
             allowed_relationships=allowedRelationship,
+            use_function_call=use_function
         )
     with ThreadPoolExecutor(max_workers=10) as executor:
         for chunk in combined_chunk_document_list:
