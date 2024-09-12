@@ -386,7 +386,7 @@ def QA_RAG(graph, model, question, document_names,session_id, mode):
         if docs:
             content, result, total_tokens = process_documents(docs, question, messages, llm,model)
         else:
-            content = "I couldn't find any relevant documents to answer your question."
+            content = "我找不到相关的内容来回答你"
             result = {"sources": [], "chunkdetails": []}
             total_tokens = 0
         

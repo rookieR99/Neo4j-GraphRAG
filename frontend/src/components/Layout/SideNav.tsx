@@ -52,7 +52,7 @@ const SideNav: React.FC<SideNavProps> = ({
           datetime: `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`,
           id: 2,
           message:
-            ' Welcome to the Neo4j Knowledge Graph Chat. You can ask questions related to documents which have been completely processed.',
+            ' 欢迎来到知识图谱聊天室。您可以询问与已完全处理的文件相关的问题.',
           user: 'chatbot',
         },
       ]);
@@ -207,7 +207,7 @@ const SideNav: React.FC<SideNavProps> = ({
                   }}
                   icon={
                     <>
-                      <IconButtonWithToolTip size='small' placement='left' clean label='Chat mode' text='Chat mode'>
+                      <IconButtonWithToolTip size='small' placement='left' clean label='聊天模型' text='聊天模型'>
                         <RiChatSettingsLine className='n-size-token-7' />
                       </IconButtonWithToolTip>
                       <ChatModeToggle

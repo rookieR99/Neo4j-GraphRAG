@@ -27,7 +27,7 @@ const ButtonWithToolTip = ({
   loading?: boolean;
   label: string;
   fill?: 'filled' | 'outlined' | 'text';
-  type?: 'submit' | 'button' | 'reset';
+  type?: '提交' | 'button' | '重置';
   color?: 'primary' | 'danger' | 'warning' | 'success' | 'neutral' | undefined;
 }) => {
   return (

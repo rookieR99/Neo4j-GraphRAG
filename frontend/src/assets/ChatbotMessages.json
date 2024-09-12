@@ -8,7 +8,7 @@
     },
     {
       "id": 2,
-      "message": " Welcome to the Neo4j Knowledge Graph Chat. You can ask questions related to documents which have been completely processed.",
+      "message": " 欢迎来到知识图谱聊天室。您可以询问与已完全处理的文件相关的问题.",
       "user": "chatbot",
       "datetime": "01/01/2024 00:00:00"
     },

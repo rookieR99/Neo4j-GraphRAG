@@ -721,39 +721,41 @@ const Content: React.FC<ContentProps> = ({
               ) : (
                 <span className='n-body-small'>Not Connected</span>
               )}
-              <div className='pt-1'>
-                {!isSchema ? (
-                  <StatusIndicator type='danger' />
-                ) : selectedNodes.length || selectedRels.length ? (
-                  <StatusIndicator type='success' />
-                ) : (
-                  <StatusIndicator type='warning' />
-                )}
-                {isSchema ? (
-                  <span className='n-body-small'>
-                    {(!selectedNodes.length || !selectedNodes.length) && 'Empty'} Graph Schema configured
-                    {selectedNodes.length || selectedRels.length
-                      ? `(${selectedNodes.length} Labels + ${selectedRels.length} Rel Types)`
-                      : ''}
-                  </span>
-                ) : (
-                  <span className='n-body-small'>No Graph Schema configured</span>
-                )}
-              </div>
+              {/*隐藏 TH*/}
+              {/*<div className='pt-1'>*/}
+              {/*  {!isSchema ? (*/}
+              {/*    <StatusIndicator type='danger' />*/}
+              {/*  ) : selectedNodes.length || selectedRels.length ? (*/}
+              {/*    <StatusIndicator type='success' />*/}
+              {/*  ) : (*/}
+              {/*    <StatusIndicator type='warning' />*/}
+              {/*  )}*/}
+              {/*  {isSchema ? (*/}
+              {/*    <span className='n-body-small'>*/}
+              {/*      {(!selectedNodes.length || !selectedNodes.length) && 'Empty'} Graph Schema configured*/}
+              {/*      {selectedNodes.length || selectedRels.length*/}
+              {/*        ? `(${selectedNodes.length} Labels + ${selectedRels.length} Rel Types)`*/}
+              {/*        : ''}*/}
+              {/*    </span>*/}
+              {/*  ) : (*/}
+              {/*    <span className='n-body-small'>No Graph Schema configured</span>*/}
+              {/*  )}*/}
+              {/*</div>*/}
             </Typography>
           </div>
           <div>
-            <ButtonWithToolTip
-              placement='top'
-              text='Configure Graph Schema, Delete disconnected Entities, Merge duplicate Entities'
-              label='Graph Enhancemnet Settings'
-              className='mr-2.5'
-              onClick={toggleEnhancementDialog}
-              disabled={!connectionStatus}
-              size={isTablet ? 'small' : 'medium'}
-            >
-              Graph Enhancement
-            </ButtonWithToolTip>
+            {/*隐藏按钮 TH*/}
+            {/*<ButtonWithToolTip*/}
+            {/*  placement='top'*/}
+            {/*  text='Configure Graph Schema, Delete disconnected Entities, Merge duplicate Entities'*/}
+            {/*  label='Graph Enhancemnet Settings'*/}
+            {/*  className='mr-2.5'*/}
+            {/*  onClick={toggleEnhancementDialog}*/}
+            {/*  disabled={!connectionStatus}*/}
+            {/*  size={isTablet ? 'small' : 'medium'}*/}
+            {/*>*/}
+            {/*  Graph Enhancement*/}
+            {/*</ButtonWithToolTip>*/}
             {!connectionStatus ? (
               <Button
                 size={isTablet ? 'small' : 'medium'}
@@ -820,17 +822,17 @@ const Content: React.FC<ContentProps> = ({
             >
               {buttonCaptions.showPreviewGraph} {selectedfileslength && completedfileNo ? `(${completedfileNo})` : ''}
             </ButtonWithToolTip>
-            <ButtonWithToolTip
-              text={tooltips.bloomGraph}
-              placement='top'
-              onClick={handleOpenGraphClick}
-              disabled={!filesData.some((f) => f?.status === 'Completed')}
-              className='ml-0.5'
-              label='Open Graph with Bloom'
-              size={isTablet ? 'small' : 'medium'}
-            >
-              {buttonCaptions.exploreGraphWithBloom}
-            </ButtonWithToolTip>
+            {/*<ButtonWithToolTip*/}
+            {/*  text={tooltips.bloomGraph}*/}
+            {/*  placement='top'*/}
+            {/*  onClick={handleOpenGraphClick}*/}
+            {/*  disabled={!filesData.some((f) => f?.status === 'Completed')}*/}
+            {/*  className='ml-0.5'*/}
+            {/*  label='Open Graph with Bloom'*/}
+            {/*  size={isTablet ? 'small' : 'medium'}*/}
+            {/*>*/}
+            {/*  {buttonCaptions.exploreGraphWithBloom}*/}
+            {/*</ButtonWithToolTip>*/}
             <ButtonWithToolTip
               text={
                 !selectedfileslength ? tooltips.deleteFile : `${selectedfileslength} ${tooltips.deleteSelectedFiles}`

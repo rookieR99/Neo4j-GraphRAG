@@ -30,7 +30,7 @@ export function ShowAll({ initiallyShown, children }: ShowAllProps) {
       <div style={{ all: 'inherit' }}>{currentChildren}</div>
       {controlsNeeded && (
         <Button fill='text' size='small' onClick={toggleExpanded}>
-          {expanded ? 'Show less' : `Show all (${leftToShow} more)`}
+          {expanded ? '简要展示' : `展示全部 (${leftToShow} 更多)`}
         </Button>
       )}
     </>

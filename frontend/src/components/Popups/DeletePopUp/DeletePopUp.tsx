@@ -18,9 +18,9 @@ export default function DeletePopUp({
   const [deleteEntities, setDeleteEntities] = useState<boolean>(true);
   const message =
     view === 'contentView'
-      ? `Are you sure you want to permanently delete ${no_of_files} ${no_of_files > 1 ? 'Files' : 'File'} ${
-          deleteEntities ? 'and associated entities' : ''
-        } from the graph database?`
+      ? `你确定是否刪除 ${no_of_files} ${no_of_files > 1 ? '文件' : '文件'} ${
+          deleteEntities ? '和相关实体' : ''
+        } 从图数据库中?`
       : `Are you sure you want to permanently delete ${no_of_files} ${
           no_of_files > 1 ? 'Nodes' : 'Node'
         } from the graph database? `;
@@ -31,7 +31,7 @@ export default function DeletePopUp({
         {view === 'contentView' && (
           <div className='mt-5'>
             <Checkbox
-              label='Delete Entities'
+              label='删除实体'
               checked={deleteEntities}
               onChange={(e) => {
                 if (e.target.checked) {

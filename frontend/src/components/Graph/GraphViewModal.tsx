@@ -508,7 +508,7 @@ const GraphViewModal: React.FunctionComponent<GraphViewModalProps> = ({
                                 onChange={(e) => {
                                   setSearchQuery(e.target.value);
                                 }}
-                                placeholder='Search On Node Properties'
+                                placeholder='搜索节点或关系'
                                 fluid={true}
                                 leftIcon={
                                   <IconButton
