@@ -78,11 +78,12 @@ const InfoModal: React.FC<chatInfoMessage> = ({ sources, model, total_tokens, re
   };
   const labelCounts = useMemo(() => {
     const counts: { [label: string]: number } = {};
-    infoEntities.forEach((entity) => {
+    for (let index = 0; index < infoEntities.length; index++) {
+      const entity = infoEntities[index];
       const { labels } = entity;
       const [label] = labels;
       counts[label] = counts[label] ? counts[label] + 1 : 1;
-    });
+    }
     return counts;
   }, [infoEntities]);
   const sortedLabels = useMemo(() => {
@@ -158,17 +159,17 @@ const InfoModal: React.FC<chatInfoMessage> = ({ sources, model, total_tokens, re
                             </Typography>
                           </div>
                         )}
-                        {/*{link?.startsWith('s3://') && (*/}
-                        {/*  <div className='flex flex-row inline-block justify-between items-center'>*/}
-                        {/*    <img src={s3logo} width={20} height={20} className='mr-2' alt='S3 Logo' />*/}
-                        {/*    <Typography*/}
-                        {/*      variant='body-medium'*/}
-                        {/*      className='text-ellipsis whitespace-nowrap overflow-hidden max-w-lg'*/}
-                        {/*    >*/}
-                        {/*      {decodeURIComponent(link).split('/').at(-1) ?? 'S3 File'}*/}
-                        {/*    </Typography>*/}
-                        {/*  </div>*/}
-                        {/*)}*/}
+                        {link?.startsWith('s3://') && (
+                          <div className='flex flex-row inline-block justify-between items-center'>
+                            <img src={s3logo} width={20} height={20} className='mr-2' alt='S3 Logo' />
+                            <Typography
+                              variant='body-medium'
+                              className='text-ellipsis whitespace-nowrap overflow-hidden max-w-lg'
+                            >
+                              {decodeURIComponent(link).split('/').at(-1) ?? 'S3 File'}
+                            </Typography>
+                          </div>
+                        )}
                         {youtubeLinkValidation(link) && (
                           <>
                             <div className='flex flex-row inline-block justiy-between items-center'>

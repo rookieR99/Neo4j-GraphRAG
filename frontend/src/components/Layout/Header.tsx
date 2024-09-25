@@ -38,60 +38,59 @@ export default function Header({ themeMode, toggleTheme }: { themeMode: string; 
         <section className='flex w-1/3 shrink-0 grow-0 items-center grow min-w-[200px]'>
           <Typography variant='h6' component='a' href='#app-bar-with-responsive-menu' sx={{}}>
             <img
-              // src={themeMode === 'dark' ? Neo4jLogoBW : Neo4jLogoColor}
-              src='../../2022-logo.png'
+              src={themeMode === 'dark' ? Neo4jLogoBW : Neo4jLogoColor}
               className='h-8 min-h-8 min-w-8'
-              alt='SIA Logo'
+              alt='Neo4j Logo'
             />
           </Typography>
         </section>
-        {/*<section className='items-center justify-end w-1/3 grow-0 flex'>*/}
-        {/*  <div>*/}
-        {/*    <div*/}
-        {/*      className='inline-flex gap-x-1'*/}
-        {/*      style={{ display: 'flex', flexGrow: 0, alignItems: 'center', gap: '4px' }}*/}
-        {/*    >*/}
-        {/*      <IconButtonWithToolTip*/}
-        {/*        text={tooltips.documentation}*/}
-        {/*        onClick={() => handleURLClick('https://neo4j.com/labs/genai-ecosystem/llm-graph-builder')}*/}
-        {/*        size='large'*/}
-        {/*        clean*/}
-        {/*        placement='left'*/}
-        {/*        label={tooltips.documentation}*/}
-        {/*      >*/}
-        {/*        <InformationCircleIconOutline className='n-size-token-7' />*/}
-        {/*      </IconButtonWithToolTip>*/}
+        <section className='items-center justify-end w-1/3 grow-0 flex'>
+          <div>
+            <div
+              className='inline-flex gap-x-1'
+              style={{ display: 'flex', flexGrow: 0, alignItems: 'center', gap: '4px' }}
+            >
+              <IconButtonWithToolTip
+                text={tooltips.documentation}
+                onClick={() => handleURLClick('https://neo4j.com/labs/genai-ecosystem/llm-graph-builder')}
+                size='large'
+                clean
+                placement='left'
+                label={tooltips.documentation}
+              >
+                <InformationCircleIconOutline className='n-size-token-7' />
+              </IconButtonWithToolTip>
 
-        {/*      <IconButtonWithToolTip*/}
-        {/*        label={tooltips.github}*/}
-        {/*        onClick={() => handleURLClick('https://github.com/neo4j-labs/llm-graph-builder/issues')}*/}
-        {/*        text={tooltips.github}*/}
-        {/*        size='large'*/}
-        {/*        clean*/}
-        {/*      >*/}
-        {/*        <CodeBracketSquareIconOutline />*/}
-        {/*      </IconButtonWithToolTip>*/}
-        {/*      <IconButtonWithToolTip*/}
-        {/*        label={tooltips.theme}*/}
-        {/*        text={tooltips.theme}*/}
-        {/*        clean*/}
-        {/*        size='large'*/}
-        {/*        onClick={toggleTheme}*/}
-        {/*        placement='left'*/}
-        {/*      >*/}
-        {/*        {themeMode === 'dark' ? (*/}
-        {/*          <span role='img' aria-label='sun'>*/}
-        {/*            <SunIconOutline />*/}
-        {/*          </span>*/}
-        {/*        ) : (*/}
-        {/*          <span role='img' aria-label='moon'>*/}
-        {/*            <MoonIconOutline />*/}
-        {/*          </span>*/}
-        {/*        )}*/}
-        {/*      </IconButtonWithToolTip>*/}
-        {/*    </div>*/}
-        {/*  </div>*/}
-        {/*</section>*/}
+              <IconButtonWithToolTip
+                label={tooltips.github}
+                onClick={() => handleURLClick('https://github.com/neo4j-labs/llm-graph-builder/issues')}
+                text={tooltips.github}
+                size='large'
+                clean
+              >
+                <CodeBracketSquareIconOutline />
+              </IconButtonWithToolTip>
+              <IconButtonWithToolTip
+                label={tooltips.theme}
+                text={tooltips.theme}
+                clean
+                size='large'
+                onClick={toggleTheme}
+                placement='left'
+              >
+                {themeMode === 'dark' ? (
+                  <span role='img' aria-label='sun'>
+                    <SunIconOutline />
+                  </span>
+                ) : (
+                  <span role='img' aria-label='moon'>
+                    <MoonIconOutline />
+                  </span>
+                )}
+              </IconButtonWithToolTip>
+            </div>
+          </div>
+        </section>
       </nav>
     </div>
   );

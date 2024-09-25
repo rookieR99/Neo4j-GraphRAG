@@ -76,7 +76,7 @@ const DrawerDropzone: React.FC<DrawerProps> = ({
                       <Typography variant='body-medium'>
                         {!isBackendConnected ? <StatusIndicator type='danger' /> : <StatusIndicator type='success' />}
                       </Typography>
-                      <span>后端连接状态</span>
+                      <span>Backend connection status</span>
                     </Typography>
                   )}
                 </div>
@@ -107,16 +107,16 @@ const DrawerDropzone: React.FC<DrawerProps> = ({
                               ></GenericModal>
                             </div>
                           )}
-                          {/*{APP_SOURCES.includes('s3') && (*/}
-                          {/*  <div*/}
-                          {/*    className={`outline-dashed imageBg ${process.env.VITE_ENV === 'PROD' ? 'w-[245px]' : ''}`}*/}
-                          {/*  >*/}
-                          {/*    <S3Component openModal={toggleS3Modal} />*/}
-                          {/*    <Suspense fallback={<FallBackDialog />}>*/}
-                          {/*      <S3Modal hideModal={toggleS3Modal} open={shows3Modal} />*/}
-                          {/*    </Suspense>*/}
-                          {/*  </div>*/}
-                          {/*)}*/}
+                          {APP_SOURCES.includes('s3') && (
+                            <div
+                              className={`outline-dashed imageBg ${process.env.VITE_ENV === 'PROD' ? 'w-[245px]' : ''}`}
+                            >
+                              <S3Component openModal={toggleS3Modal} />
+                              <Suspense fallback={<FallBackDialog />}>
+                                <S3Modal hideModal={toggleS3Modal} open={shows3Modal} />
+                              </Suspense>
+                            </div>
+                          )}
                           {APP_SOURCES.includes('gcs') && (
                             <div
                               className={`outline-dashed imageBg ${process.env.VITE_ENV === 'PROD' ? 'w-[245px]' : ''}`}
@@ -162,16 +162,16 @@ const DrawerDropzone: React.FC<DrawerProps> = ({
                       {(APP_SOURCES != undefined && APP_SOURCES.includes('s3')) ||
                       (APP_SOURCES != undefined && APP_SOURCES.includes('gcs')) ? (
                         <>
-                          {/*{APP_SOURCES != undefined && APP_SOURCES.includes('s3') && (*/}
-                          {/*  <div*/}
-                          {/*    className={`outline-dashed imageBg ${process.env.VITE_ENV === 'PROD' ? 'w-[245px]' : ''}`}*/}
-                          {/*  >*/}
-                          {/*    <S3Component openModal={toggleS3Modal} />*/}
-                          {/*    <Suspense fallback={<FallBackDialog />}>*/}
-                          {/*      <S3Modal hideModal={toggleS3Modal} open={shows3Modal} />*/}
-                          {/*    </Suspense>*/}
-                          {/*  </div>*/}
-                          {/*)}*/}
+                          {APP_SOURCES != undefined && APP_SOURCES.includes('s3') && (
+                            <div
+                              className={`outline-dashed imageBg ${process.env.VITE_ENV === 'PROD' ? 'w-[245px]' : ''}`}
+                            >
+                              <S3Component openModal={toggleS3Modal} />
+                              <Suspense fallback={<FallBackDialog />}>
+                                <S3Modal hideModal={toggleS3Modal} open={shows3Modal} />
+                              </Suspense>
+                            </div>
+                          )}
                           {APP_SOURCES != undefined && APP_SOURCES.includes('gcs') && (
                             <div
                               className={`outline-dashed imageBg ${process.env.VITE_ENV === 'PROD' ? 'w-[245px]' : ''}`}

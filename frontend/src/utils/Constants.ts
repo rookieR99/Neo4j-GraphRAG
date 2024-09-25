@@ -55,11 +55,11 @@ export const defaultLLM = llms?.includes('openai-gpt-4o')
   ? 'openai-gpt-4o'
   : llms?.includes('gemini-1.0-pro')
   ? 'gemini-1.0-pro'
-  : '智谱';
+  : 'diffbot';
 export const chatModes =
   process.env?.VITE_CHAT_MODES?.trim() != ''
     ? process.env.VITE_CHAT_MODES?.split(',')
-    : ['向量', 'graph', '图谱+向量', '全文', '图谱+向量+全文'];
+    : ['vector', 'graph', 'graph+vector', 'fulltext', 'graph+vector+fulltext'];
 export const chunkSize = process.env.VITE_CHUNK_SIZE ? parseInt(process.env.VITE_CHUNK_SIZE) : 1 * 1024 * 1024;
 export const timeperpage = process.env.VITE_TIME_PER_PAGE ? parseInt(process.env.VITE_TIME_PER_PAGE) : 50;
 export const timePerByte = 0.2;
@@ -139,29 +139,6 @@ export const tooltips = {
   clearGraphSettings: 'Clear configured Graph Schema',
 };
 
-// export const buttonCaptions = {
-//   exploreGraphWithBloom: 'Explore Graph with Bloom',
-//   showPreviewGraph: '预览图谱',
-//   deleteFiles: '删除文件',
-//   generateGraph: '生成图谱',
-//   dropzoneSpan: '文本，图片，不规则文档',
-//   youtube: 'Youtube',
-//   gcs: 'GCS',
-//   amazon: 'Amazon S3',
-//   noLables: 'No Labels Found in the Database',
-//   dropYourCreds: 'Drop your neo4j credentials file here',
-//   analyze: 'Analyze text to extract graph schema',
-//   connect: '连接',
-//   disconnect: '断开连接',
-//   submit: '提交',
-//   connectToNeo4j: '连接Neo4j',
-//   cancel: '取消',
-//   details: '详情',
-//   continueSettings: '继续',
-//   clearSettings: 'Clear Schema',
-//   ask: '回答',
-// };
-
 export const buttonCaptions = {
   exploreGraphWithBloom: 'Explore Graph with Bloom',
   showPreviewGraph: 'Preview Graph',
@@ -208,7 +185,11 @@ export const POST_PROCESSING_JOBS: { title: string; description: string }[] = [
                 performing similarity-based searches.`,
   },
 ];
-
+export const RETRY_OPIONS = [
+  'start_from_beginning',
+  'delete_entities_and_start_from_beginning',
+  'start_from_last_processed_position',
+];
 export const batchSize: number = parseInt(process.env.VITE_BATCH_SIZE ?? '2');
 
 export const nvlOptions: NvlOptions = {
@@ -244,17 +225,17 @@ export const appLabels = {
 export const graphLabels = {
   showGraphView: 'showGraphView',
   chatInfoView: 'chatInfoView',
-  generateGraph: '图谱预览',
+  generateGraph: 'Generated Graph',
   inspectGeneratedGraphFrom: 'Inspect Generated Graph from',
-  document: '文本',
-  chunk: '块',
-  documentChunk: '文本块',
-  entities: '实体',
-  resultOverview: '结果概述',
-  totalNodes: '节点总数',
-  noEntities: '没有实体',
+  document: 'Document',
+  chunk: 'Chunk',
+  documentChunk: 'DocumentChunk',
+  entities: 'Entities',
+  resultOverview: 'Result Overview',
+  totalNodes: 'Total Nodes',
+  noEntities: 'No Entities Found',
   selectCheckbox: 'Select atleast one checkbox for graph view',
-  totalRelationships: '关系总数',
+  totalRelationships: 'Total Relationships',
   nodeSize: 30,
 };
 

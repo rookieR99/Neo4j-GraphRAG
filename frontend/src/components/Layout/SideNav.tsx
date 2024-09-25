@@ -22,6 +22,7 @@ import GCSButton from '../DataSources/GCS/GCSButton';
 import S3Component from '../DataSources/AWS/S3Bucket';
 import WebButton from '../DataSources/Web/WebButton';
 import DropZoneForSmallLayouts from '../DataSources/Local/DropZoneForSmallLayouts';
+import { useCredentials } from '../../context/UserCredentials';
 
 const SideNav: React.FC<SideNavProps> = ({
   position,
@@ -43,6 +44,7 @@ const SideNav: React.FC<SideNavProps> = ({
   const [chatModeAnchor, setchatModeAnchor] = useState<HTMLElement | null>(null);
   const [showChatMode, setshowChatMode] = useState<boolean>(false);
   const largedesktops = useMediaQuery(`(min-width:1440px )`);
+  const { connectionStatus } = useCredentials();
 
   const date = new Date();
   useEffect(() => {
@@ -52,7 +54,7 @@ const SideNav: React.FC<SideNavProps> = ({
           datetime: `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`,
           id: 2,
           message:
-            ' 欢迎来到知识图谱聊天室。您可以询问与已完全处理的文件相关的问题.',
+            ' Welcome to the Neo4j Knowledge Graph Chat. You can ask questions related to documents which have been completely processed.',
           user: 'chatbot',
         },
       ]);
@@ -207,7 +209,7 @@ const SideNav: React.FC<SideNavProps> = ({
                   }}
                   icon={
                     <>
-                      <IconButtonWithToolTip size='small' placement='left' clean label='聊天模型' text='聊天模型'>
+                      <IconButtonWithToolTip size='small' placement='left' clean label='Chat mode' text='Chat mode'>
                         <RiChatSettingsLine className='n-size-token-7' />
                       </IconButtonWithToolTip>
                       <ChatModeToggle
@@ -249,6 +251,7 @@ const SideNav: React.FC<SideNavProps> = ({
                 messages={messages ?? []}
                 setMessages={setMessages}
                 isLoading={getIsLoading(messages ?? [])}
+                connectionStatus={connectionStatus}
               />
             </Dialog.Content>
           </Dialog>,

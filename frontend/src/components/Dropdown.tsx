@@ -26,7 +26,7 @@ const DropdownComponent: React.FC<ReusableDropdownProps> = ({
             <Dropdown
               type='select'
               aria-label='A selection dropdown'
-              label='选择大模型'
+              label='LLM Models'
               selectProps={{
                 onChange: handleChange,
                 options: allOptions?.map((option) => {
@@ -61,7 +61,7 @@ const DropdownComponent: React.FC<ReusableDropdownProps> = ({
               fluid
             />
           </Tip.Trigger>
-          <Tip.Content>选择生成知识图谱和聊天的大模型</Tip.Content>
+          <Tip.Content>LLM Model used for Extraction & Chat</Tip.Content>
         </Tip>
         {children}
       </div>

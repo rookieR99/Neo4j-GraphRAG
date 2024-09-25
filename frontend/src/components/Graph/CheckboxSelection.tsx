@@ -6,13 +6,13 @@ const CheckboxSelection: React.FC<CheckboxSectionProps> = ({ graphType, loading,
     <div className='flex gap-5'>
       <Checkbox
         checked={graphType.includes('DocumentChunk')}
-        label='文本 & 块'
+        label='Document & Chunk'
         disabled={loading}
         onChange={() => handleChange('DocumentChunk')}
       />
       <Checkbox
         checked={graphType.includes('Entities')}
-        label='实体'
+        label='Entities'
         disabled={loading}
         onChange={() => handleChange('Entities')}
       />
