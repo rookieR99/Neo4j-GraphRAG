@@ -3,9 +3,12 @@ import shutil
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 # from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.document_loaders import PyMuPDFLoader
+from langchain_community.document_loaders import PyMuPDFLoader, UnstructuredMarkdownLoader
 from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain_core.documents import Document
+import nltk
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
 
 # def get_documents_from_file_by_bytes(file):
 #     file_name = file.filename
@@ -22,6 +25,9 @@ def load_document_content(file_path):
     if Path(file_path).suffix.lower() == '.pdf':
         print("in if")
         return PyMuPDFLoader(file_path)
+    # elif Path(file_path).suffix.lower() == '.md':
+    #     print("in md")
+    #     return UnstructuredMarkdownLoader(file_path)
     else:
         print("in else")
         return UnstructuredFileLoader(file_path, mode="elements",autodetect_encoding=True)

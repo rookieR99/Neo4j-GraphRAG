@@ -25,6 +25,8 @@ import shutil
 import urllib.parse
 import json
 
+from backend.src.shared.common_fn import handle_backticks_nodes_relationship_id_type
+
 warnings.filterwarnings("ignore")
 load_dotenv()
 logging.basicConfig(format='%(asctime)s - %(message)s',level='INFO')
@@ -243,6 +245,7 @@ def extract_graph_from_file_gcs(uri, userName, password, database, model, gcs_pr
 
   return processing_source(uri, userName, password, database, model, file_name, pages, allowedNodes, allowedRelationship)
 
+# 处理过程1
 def processing_source(uri, userName, password, database, model, file_name, pages, allowedNodes, allowedRelationship, is_uploaded_from_local=None, merged_file_path=None):
   """
    Extracts a Neo4jGraph from a PDF file based on the model.
@@ -369,6 +372,7 @@ def processing_source(uri, userName, password, database, model, file_name, pages
     logging.error(error_message)
     raise Exception(error_message)
 
+#处理块
 def processing_chunks(chunkId_chunkDoc_list,graph,uri, userName, password, database,file_name,model,allowedNodes,allowedRelationship, node_count, rel_count):
   #create vector index and update chunk node with embedding
   if graph is not None:

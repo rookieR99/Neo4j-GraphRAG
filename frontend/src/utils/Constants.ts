@@ -59,7 +59,7 @@ export const defaultLLM = llms?.includes('openai-gpt-4o')
 export const chatModes =
   process.env?.VITE_CHAT_MODES?.trim() != ''
     ? process.env.VITE_CHAT_MODES?.split(',')
-    : ['向量', '图谱', '图谱+向量', '全文', '图谱+向量+全文'];
+    : ['向量', 'graph', '图谱+向量', '全文', '图谱+向量+全文'];
 export const chunkSize = process.env.VITE_CHUNK_SIZE ? parseInt(process.env.VITE_CHUNK_SIZE) : 1 * 1024 * 1024;
 export const timeperpage = process.env.VITE_TIME_PER_PAGE ? parseInt(process.env.VITE_TIME_PER_PAGE) : 50;
 export const timePerByte = 0.2;
