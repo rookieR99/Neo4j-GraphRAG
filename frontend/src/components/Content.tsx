@@ -11,6 +11,7 @@ import {
   CustomFile,
   OptionType,
   UserCredentials,
+  chunkdata,
   connectionState,
 } from '../types';
 import deleteAPI from '../services/DeleteFiles';
@@ -18,7 +19,16 @@ import { postProcessing } from '../services/PostProcessing';
 import { triggerStatusUpdateAPI } from '../services/ServerSideStatusUpdateAPI';
 import useServerSideEvent from '../hooks/useSse';
 import { useSearchParams } from 'react-router-dom';
-import { batchSize, buttonCaptions, defaultLLM, largeFileSize, llms, RETRY_OPIONS, tooltips } from '../utils/Constants';
+import {
+  batchSize,
+  buttonCaptions,
+  chatModeLables,
+  defaultLLM,
+  largeFileSize,
+  llms,
+  RETRY_OPIONS,
+  tooltips,
+} from '../utils/Constants';
 import ButtonWithToolTip from './UI/ButtonWithToolTip';
 import connectAPI from '../services/ConnectAPI';
 import DropdownComponent from './Dropdown';
@@ -28,10 +38,15 @@ import FallBackDialog from './UI/FallBackDialog';
 import DeletePopUp from './Popups/DeletePopUp/DeletePopUp';
 import GraphEnhancementDialog from './Popups/GraphEnhancementDialog';
 import { tokens } from '@neo4j-ndl/base';
+import axios from 'axios';
+import DatabaseStatusIcon from './UI/DatabaseStatusIcon';
 import RetryConfirmationDialog from './Popups/RetryConfirmation/Index';
 import retry from '../services/retry';
 import { showErrorToast, showNormalToast, showSuccessToast } from '../utils/toasts';
-import axios from 'axios';
+import { useMessageContext } from '../context/UserMessages';
+import PostProcessingToast from './Popups/GraphEnhancementDialog/PostProcessingCheckList/PostProcessingToast';
+import { getChunkText } from '../services/getChunkText';
+import ChunkPopUp from './Popups/ChunkPopUp';
 
 const ConnectionModal = lazy(() => import('./Popups/ConnectionModal/ConnectionModal'));
 const ConfirmationDialog = lazy(() => import('./Popups/LargeFilePopUp/ConfirmationDialog'));
@@ -58,18 +73,34 @@ const Content: React.FC<ContentProps> = ({
   });
   const [openGraphView, setOpenGraphView] = useState<boolean>(false);
   const [inspectedName, setInspectedName] = useState<string>('');
-  const { setUserCredentials, userCredentials, connectionStatus, setConnectionStatus } = useCredentials();
+  const [documentName, setDocumentName] = useState<string>('');
+  const {
+    setUserCredentials,
+    userCredentials,
+    connectionStatus,
+    setConnectionStatus,
+    isGdsActive,
+    setGdsActive,
+    setIsReadOnlyUser,
+    isReadOnlyUser,
+  } = useCredentials();
   const [showConfirmationModal, setshowConfirmationModal] = useState<boolean>(false);
   const [extractLoading, setextractLoading] = useState<boolean>(false);
   const [retryFile, setRetryFile] = useState<string>('');
   const [retryLoading, setRetryLoading] = useState<boolean>(false);
   const [showRetryPopup, toggleRetryPopup] = useReducer((state) => !state, false);
+  const [showChunkPopup, toggleChunkPopup] = useReducer((state) => !state, false);
+  const [chunksLoading, toggleChunksLoading] = useReducer((state) => !state, false);
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [totalPageCount, setTotalPageCount] = useState<number | null>(null);
+  const [textChunks, setTextChunks] = useState<chunkdata[]>([]);
+
   const [alertStateForRetry, setAlertStateForRetry] = useState<BannerAlertProps>({
     showAlert: false,
     alertType: 'neutral',
     alertMessage: '',
   });
-
+  const { setClearHistoryData } = useMessageContext();
   const {
     filesData,
     setFilesData,
@@ -84,11 +115,13 @@ const Content: React.FC<ContentProps> = ({
     queue,
     processedCount,
     setProcessedCount,
+    setchatModes,
   } = useFileContext();
-  const [viewPoint, setViewPoint] = useState<'tableView' | 'showGraphView' | 'chatInfoView'>('tableView');
+  const [viewPoint, setViewPoint] = useState<'tableView' | 'showGraphView' | 'chatInfoView'|'neighborView'>('tableView');
   const [showDeletePopUp, setshowDeletePopUp] = useState<boolean>(false);
   const [deleteLoading, setdeleteLoading] = useState<boolean>(false);
   const [searchParams] = useSearchParams();
+
 
   const { updateStatusForLargeFiles } = useServerSideEvent(
     (inMinutes, time, fileName) => {
@@ -100,7 +133,12 @@ const Content: React.FC<ContentProps> = ({
     }
   );
   const childRef = useRef<ChildRef>(null);
-
+  const incrementPage = () => {
+    setCurrentPage((prev) => prev + 1);
+  };
+  const decrementPage = () => {
+    setCurrentPage((prev) => prev - 1);
+  };
   useEffect(() => {
     if (!init && !searchParams.has('connectURL')) {
       let session = localStorage.getItem('neo4j.connection');
@@ -109,10 +147,16 @@ const Content: React.FC<ContentProps> = ({
         setUserCredentials({
           uri: neo4jConnection.uri,
           userName: neo4jConnection.user,
-          password: neo4jConnection.password,
+          password: atob(neo4jConnection.password),
           database: neo4jConnection.database,
           port: neo4jConnection.uri.split(':')[2],
         });
+        if (neo4jConnection.isgdsActive !== undefined) {
+          setGdsActive(neo4jConnection.isgdsActive);
+        }
+        if (neo4jConnection.isReadOnlyUser !== undefined) {
+          setIsReadOnlyUser(neo4jConnection.isReadOnlyUser);
+        }
       } else {
         setOpenConnection((prev) => ({ ...prev, openPopUp: true }));
       }
@@ -121,7 +165,13 @@ const Content: React.FC<ContentProps> = ({
       setOpenConnection((prev) => ({ ...prev, openPopUp: true }));
     }
   }, []);
-
+  useEffect(() => {
+    if (currentPage >= 1) {
+      (async () => {
+        await getChunks(documentName, currentPage);
+      })();
+    }
+  }, [currentPage, documentName]);
   useEffect(() => {
     setFilesData((prevfiles) => {
       return prevfiles.map((curfile) => {
@@ -137,10 +187,17 @@ const Content: React.FC<ContentProps> = ({
     if (afterFirstRender) {
       localStorage.setItem('processedCount', JSON.stringify({ db: userCredentials?.uri, count: processedCount }));
     }
-    if (processedCount == batchSize) {
+    if (processedCount == batchSize && !isReadOnlyUser) {
       handleGenerateGraph([], true);
     }
-  }, [processedCount, userCredentials]);
+    if (processedCount === 1 && queue.isEmpty()) {
+      (async () => {
+        showNormalToast(<PostProcessingToast isGdsActive={isGdsActive} postProcessingTasks={postProcessingTasks} />);
+        await postProcessing(userCredentials as UserCredentials, postProcessingTasks);
+        showSuccessToast('All Q&A functionality is available now.');
+      })();
+    }
+  }, [processedCount, userCredentials, queue, isReadOnlyUser, isGdsActive]);
 
   useEffect(() => {
     if (afterFirstRender) {
@@ -161,16 +218,27 @@ const Content: React.FC<ContentProps> = ({
     if (connection != null) {
       (async () => {
         const parsedData = JSON.parse(connection);
-        console.log(parsedData.uri);
-        const response = await connectAPI(parsedData.uri, parsedData.user, parsedData.password, parsedData.database);
+        const response = await connectAPI(
+          parsedData.uri,
+          parsedData.user,
+          atob(parsedData.password),
+          parsedData.database
+        );
         if (response?.data?.status === 'Success') {
           localStorage.setItem(
             'neo4j.connection',
             JSON.stringify({
               ...parsedData,
               userDbVectorIndex: response.data.data.db_vector_dimension,
+              password: btoa(atob(parsedData.password)),
             })
           );
+          if (response.data.data.gds_status !== undefined) {
+            setGdsActive(response.data.data.gds_status);
+          }
+          if (response.data.data.write_access !== undefined) {
+            setIsReadOnlyUser(!response.data.data.write_access);
+          }
           if (
             (response.data.data.application_dimension === response.data.data.db_vector_dimension ||
               response.data.data.db_vector_dimension == 0) &&
@@ -205,7 +273,15 @@ const Content: React.FC<ContentProps> = ({
       setModel(selectedOption?.value);
     }
   };
-
+  const getChunks = async (name: string, pageNo: number) => {
+    toggleChunksLoading();
+    const response = await getChunkText(userCredentials as UserCredentials, name, pageNo);
+    setTextChunks(response.data.data.pageitems);
+    if (!totalPageCount) {
+      setTotalPageCount(response.data.data.total_pages);
+    }
+    toggleChunksLoading();
+  };
   const extractData = async (uid: string, isselectedRows = false, filesTobeProcess: CustomFile[]) => {
     if (!isselectedRows) {
       const fileItem = filesData.find((f) => f.id == uid);
@@ -262,7 +338,7 @@ const Content: React.FC<ContentProps> = ({
         userCredentials as UserCredentials,
         fileItem.fileSource,
         fileItem.retryOption ?? '',
-        fileItem.source_url,
+        fileItem.sourceUrl,
         localStorage.getItem('accesskey'),
         localStorage.getItem('secretkey'),
         fileItem.name ?? '',
@@ -270,9 +346,9 @@ const Content: React.FC<ContentProps> = ({
         fileItem.gcsBucketFolder ?? '',
         selectedNodes.map((l) => l.value),
         selectedRels.map((t) => t.value),
-        fileItem.google_project_id,
+        fileItem.googleProjectId,
         fileItem.language,
-        fileItem.access_token
+        fileItem.accessToken
       );
 
       if (apiResponse?.status === 'Failed') {
@@ -285,10 +361,11 @@ const Content: React.FC<ContentProps> = ({
               const apiRes = apiResponse?.data;
               return {
                 ...curfile,
-                processing: apiRes?.processingTime?.toFixed(2),
+                processingProgress: apiRes?.processingTime?.toFixed(2),
+                processingTotalTime: apiRes?.processingTime?.toFixed(2),
                 status: apiRes?.status,
-                NodesCount: apiRes?.nodeCount,
-                relationshipCount: apiRes?.relationshipCount,
+                nodesCount: apiRes?.nodeCount,
+                relationshipsCount: apiRes?.relationshipCount,
                 model: apiRes?.model,
               };
             }
@@ -356,7 +433,12 @@ const Content: React.FC<ContentProps> = ({
     return data;
   };
 
-  const addFilesToQueue = (remainingFiles: CustomFile[]) => {
+  const addFilesToQueue = async (remainingFiles: CustomFile[]) => {
+    if (!remainingFiles.length) {
+      showNormalToast(<PostProcessingToast isGdsActive={isGdsActive} postProcessingTasks={postProcessingTasks} />);
+      await postProcessing(userCredentials as UserCredentials, postProcessingTasks);
+      showSuccessToast('All Q&A functionality is available now.');
+    }
     for (let index = 0; index < remainingFiles.length; index++) {
       const f = remainingFiles[index];
       setFilesData((prev) =>
@@ -432,22 +514,20 @@ const Content: React.FC<ContentProps> = ({
         }
         data = triggerBatchProcessing(filesTobeSchedule, filesTobeProcessed, true, true);
       }
-      Promise.allSettled(data).then(async (_) => {
+      Promise.allSettled(data).then((_) => {
         setextractLoading(false);
-        await postProcessing(userCredentials as UserCredentials, postProcessingTasks);
       });
     } else if (queueFiles && !queue.isEmpty() && processingFilesCount < batchSize) {
       data = scheduleBatchWiseProcess(queue.items, true);
-      Promise.allSettled(data).then(async (_) => {
+      Promise.allSettled(data).then((_) => {
         setextractLoading(false);
-        await postProcessing(userCredentials as UserCredentials, postProcessingTasks);
       });
     } else {
       addFilesToQueue(filesTobeProcessed as CustomFile[]);
     }
   };
 
-  function processWaitingFilesOnRefresh() {
+  const processWaitingFilesOnRefresh = () => {
     let data = [];
     const processingFilesCount = filesData.filter((f) => f.status === 'Processing').length;
 
@@ -458,9 +538,8 @@ const Content: React.FC<ContentProps> = ({
       } else {
         data = triggerBatchProcessing(queue.items, queue.items as CustomFile[], true, false);
       }
-      Promise.allSettled(data).then(async (_) => {
+      Promise.allSettled(data).then((_) => {
         setextractLoading(false);
-        await postProcessing(userCredentials as UserCredentials, postProcessingTasks);
       });
     } else {
       const selectedNewFiles = childRef.current
@@ -468,7 +547,7 @@ const Content: React.FC<ContentProps> = ({
         .filter((f) => f.status === 'New' || f.status == 'Reprocess');
       addFilesToQueue(selectedNewFiles as CustomFile[]);
     }
-  }
+  };
 
   const handleOpenGraphClick = () => {
     const bloomUrl = process.env.VITE_BLOOM_URL;
@@ -503,6 +582,8 @@ const Content: React.FC<ContentProps> = ({
     setUserCredentials({ uri: '', password: '', userName: '', database: '' });
     setSelectedNodes([]);
     setSelectedRels([]);
+    setClearHistoryData(true);
+    setchatModes([chatModeLables['graph+vector+fulltext']]);
   };
 
   const retryHandler = async (filename: string, retryoption: string) => {
@@ -513,7 +594,7 @@ const Content: React.FC<ContentProps> = ({
       if (response.data.status === 'Failure') {
         throw new Error(response.data.error);
       }
-      const isStartFromBegining = retryoption === RETRY_OPIONS[0] || retryoption===RETRY_OPIONS[1];
+      const isStartFromBegining = retryoption === RETRY_OPIONS[0] || retryoption === RETRY_OPIONS[1];
       setFilesData((prev) => {
         return prev.map((f) => {
           return f.name === filename
@@ -521,8 +602,8 @@ const Content: React.FC<ContentProps> = ({
                 ...f,
                 status: 'Reprocess',
                 processingProgress: isStartFromBegining ? 0 : f.processingProgress,
-                NodesCount: isStartFromBegining ? 0 : f.NodesCount,
-                relationshipCount: isStartFromBegining ? 0 : f.relationshipCount,
+                nodesCount: isStartFromBegining ? 0 : f.nodesCount,
+                relationshipCount: isStartFromBegining ? 0 : f.relationshipsCount,
               }
             : f;
         });
@@ -720,6 +801,18 @@ const Content: React.FC<ContentProps> = ({
           view='contentView'
         ></DeletePopUp>
       )}
+      {showChunkPopup && (
+        <ChunkPopUp
+          chunksLoading={chunksLoading}
+          onClose={() => toggleChunkPopup()}
+          showChunkPopup={showChunkPopup}
+          chunks={textChunks}
+          incrementPage={incrementPage}
+          decrementPage={decrementPage}
+          currentPage={currentPage}
+          totalPageCount={totalPageCount}
+        ></ChunkPopUp>
+      )}
       {showEnhancementDialog && (
         <GraphEnhancementDialog
           open={showEnhancementDialog}
@@ -739,16 +832,14 @@ const Content: React.FC<ContentProps> = ({
               chunksExistsWithDifferentEmbedding={openConnection.chunksExistsWithDifferentDimension}
             />
           </Suspense>
-
           <div className='connectionstatus__container'>
-            <span className='h6 px-1'>Neo4j connection</span>
+            <span className='h6 px-1'>Neo4j connection {isReadOnlyUser ? '(Read only Mode)' : ''}</span>
             <Typography variant='body-medium'>
-              {!connectionStatus ? <StatusIndicator type='danger' /> : <StatusIndicator type='success' />}
-              {connectionStatus ? (
-                <span className='n-body-small'>{userCredentials?.uri}</span>
-              ) : (
-                <span className='n-body-small'>Not Connected</span>
-              )}
+              <DatabaseStatusIcon
+                isConnected={connectionStatus}
+                isGdsActive={isGdsActive}
+                uri={userCredentials && userCredentials?.uri}
+              />
               <div className='pt-1'>
                 {!isSchema ? (
                   <StatusIndicator type='danger' />
@@ -773,11 +864,11 @@ const Content: React.FC<ContentProps> = ({
           <div>
             <ButtonWithToolTip
               placement='top'
-              text='Configure Graph Schema, Delete disconnected Entities, Merge duplicate Entities'
+              text='Enhance graph quality'
               label='Graph Enhancemnet Settings'
               className='mr-2.5'
               onClick={toggleEnhancementDialog}
-              disabled={!connectionStatus}
+              disabled={!connectionStatus || isReadOnlyUser}
               size={isTablet ? 'small' : 'medium'}
             >
               Graph Enhancement
@@ -810,6 +901,17 @@ const Content: React.FC<ContentProps> = ({
             setRetryFile(id);
             toggleRetryPopup();
           }}
+          onChunkView={async (name) => {
+            setDocumentName(name);
+            if (name != documentName) {
+              toggleChunkPopup();
+              if (totalPageCount) {
+                setTotalPageCount(null);
+              }
+              setCurrentPage(1);
+              // await getChunks(name, 1);
+            }
+          }}
           ref={childRef}
           handleGenerateGraph={processWaitingFilesOnRefresh}
         ></FileTable>
@@ -834,7 +936,7 @@ const Content: React.FC<ContentProps> = ({
               placement='top'
               label='generate graph'
               onClick={onClickHandler}
-              disabled={disableCheck}
+              disabled={disableCheck || isReadOnlyUser}
               className='mr-0.5'
               size={isTablet ? 'small' : 'medium'}
             >
@@ -869,7 +971,7 @@ const Content: React.FC<ContentProps> = ({
               }
               placement='top'
               onClick={() => setshowDeletePopUp(true)}
-              disabled={!selectedfileslength}
+              disabled={!selectedfileslength || isReadOnlyUser}
               className='ml-0.5'
               label='Delete Files'
               size={isTablet ? 'small' : 'medium'}

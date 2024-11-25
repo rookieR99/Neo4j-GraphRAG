@@ -8,8 +8,9 @@ import {
   StatusIndicator,
   TextLink,
   Typography,
+  useCopyToClipboard,
 } from '@neo4j-ndl/react';
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -27,15 +28,20 @@ import { getSourceNodes } from '../services/GetFiles';
 import { v4 as uuidv4 } from 'uuid';
 import {
   statusCheck,
-  capitalize,
   isFileCompleted,
   calculateProcessedCount,
   getFileSourceStatus,
   isProcessingFileValid,
+  capitalizeWithUnderscore,
 } from '../utils/Utils';
 import { SourceNode, CustomFile, FileTableProps, UserCredentials, statusupdate, ChildRef } from '../types';
 import { useCredentials } from '../context/UserCredentials';
-import { ArrowPathIconSolid, MagnifyingGlassCircleIconSolid } from '@neo4j-ndl/react/icons';
+import {
+  ArrowPathIconSolid,
+  ClipboardDocumentIconSolid,
+  MagnifyingGlassCircleIconSolid,
+  DocumentTextIconSolid,
+} from '@neo4j-ndl/react/icons';
 import CustomProgressBar from './UI/CustomProgressBar';
 import subscribe from '../services/PollingAPI';
 import { triggerStatusUpdateAPI } from '../services/ServerSideStatusUpdateAPI';
@@ -43,16 +49,18 @@ import useServerSideEvent from '../hooks/useSse';
 import { AxiosError } from 'axios';
 import { XMarkIconOutline } from '@neo4j-ndl/react/icons';
 import cancelAPI from '../services/CancelAPI';
-import IconButtonWithToolTip from './UI/IconButtonToolTip';
+import { IconButtonWithToolTip } from './UI/IconButtonToolTip';
 import { batchSize, largeFileSize, llms } from '../utils/Constants';
 import IndeterminateCheckbox from './UI/CustomCheckBox';
 import { showErrorToast, showNormalToast } from '../utils/toasts';
+import { ThemeWrapperContext } from '../context/ThemeWrapper';
 let onlyfortheFirstRender = true;
+
 const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
-  const { isExpanded, connectionStatus, setConnectionStatus, onInspect, onRetry } = props;
+  const { isExpanded, connectionStatus, setConnectionStatus, onInspect, onRetry, onChunkView } = props;
   const { filesData, setFilesData, model, rowSelection, setRowSelection, setSelectedRows, setProcessedCount, queue } =
     useFileContext();
-  const { userCredentials } = useCredentials();
+  const { userCredentials, isReadOnlyUser } = useCredentials();
   const columnHelper = createColumnHelper<CustomFile>();
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -61,6 +69,9 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
   const [fileSourceFilter, setFileSourceFilter] = useState<string>('');
   const [llmtypeFilter, setLLmtypeFilter] = useState<string>('');
   const skipPageResetRef = useRef<boolean>(false);
+  const [_, copy] = useCopyToClipboard();
+  const { colorMode } = useContext(ThemeWrapperContext);
+  const [copyRow, setCopyRow] = useState<boolean>(false);
 
   const tableRef = useRef(null);
 
@@ -72,6 +83,15 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
       showErrorToast(`${fileName} Failed to process`);
     }
   );
+
+  const handleCopy = (rowData: any) => {
+    const rowString = JSON.stringify(rowData, null, 2);
+    copy(rowString);
+    setCopyRow(true);
+    setTimeout(() => {
+      setCopyRow(false);
+    }, 5000);
+  };
   const columns = useMemo(
     () => [
       {
@@ -122,8 +142,8 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
             <div className='textellipsis'>
               <span
                 title={
-                  (info.row.original?.fileSource === 's3 bucket' && info.row.original?.source_url) ||
-                  (info.row.original?.fileSource === 'youtube' && info.row.original?.source_url) ||
+                  (info.row.original?.fileSource === 's3 bucket' && info.row.original?.sourceUrl) ||
+                  (info.row.original?.fileSource === 'youtube' && info.row.original?.sourceUrl) ||
                   info.getValue()
                 }
               >
@@ -146,22 +166,21 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
               >
                 <StatusIndicator type={statusCheck(info.getValue())} />
                 {info.getValue()}
-                {/* {(info.getValue() === 'Completed' ||
-                  info.getValue() === 'Failed' ||
-                  info.getValue() === 'Cancelled') && (
-                  <span className='mx-1'>
-                    <IconButtonWithToolTip
-                      placement='right'
-                      text='Reprocess'
-                      size='small'
-                      label='reprocess'
-                      clean
-                      onClick={() => onRetry(info?.row?.id as string)}
-                    >
-                      <ArrowPathIconSolid />
-                    </IconButtonWithToolTip>
-                  </span>
-                )} */}
+                {(info.getValue() === 'Completed' || info.getValue() === 'Failed' || info.getValue() === 'Cancelled') &&
+                  !isReadOnlyUser && (
+                    <span className='mx-1'>
+                      <IconButtonWithToolTip
+                        placement='right'
+                        text='Reprocess'
+                        size='small'
+                        label='reprocess'
+                        clean
+                        onClick={() => onRetry(info?.row?.id as string)}
+                      >
+                        <ArrowPathIconSolid />
+                      </IconButtonWithToolTip>
+                    </span>
+                  )}
               </div>
             );
           } else if (info.getValue() === 'Processing' && info.row.original.processingProgress === undefined) {
@@ -289,7 +308,7 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
           },
         },
       }),
-      columnHelper.accessor((row) => row.uploadprogess, {
+      columnHelper.accessor((row) => row.uploadProgress, {
         id: 'uploadprogess',
         cell: (info: CellContext<CustomFile, string>) => {
           if (parseInt(info.getValue()) === 100 || info.row.original?.status === 'New') {
@@ -336,7 +355,7 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
             return (
               <Flex>
                 <span>
-                  <TextLink externalLink href={info.row.original.source_url}>
+                  <TextLink externalLink href={info.row.original.sourceUrl}>
                     {info.row.original.fileSource}
                   </TextLink>
                 </span>
@@ -432,16 +451,7 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
         id: 'model',
         cell: (info) => {
           const model = info.getValue();
-          return (
-            <i>
-              {(model.includes('LLM_MODEL_CONFIG_')
-                ? capitalize(model.split('LLM_MODEL_CONFIG_').at(-1) as string)
-                : capitalize(model)
-              )
-                .split('_')
-                .join(' ')}
-            </i>
-          );
+          return <i>{capitalizeWithUnderscore(model)}</i>;
         },
         header: () => <span>Model</span>,
         footer: (info) => info.column.id,
@@ -478,13 +488,13 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
           },
         },
       }),
-      columnHelper.accessor((row) => row.NodesCount, {
+      columnHelper.accessor((row) => row.nodesCount, {
         id: 'NodesCount',
         cell: (info) => <i>{info.getValue()}</i>,
         header: () => <span>Nodes</span>,
         footer: (info) => info.column.id,
       }),
-      columnHelper.accessor((row) => row.relationshipCount, {
+      columnHelper.accessor((row) => row.relationshipsCount, {
         id: 'relationshipCount',
         cell: (info) => <i>{info.getValue()}</i>,
         header: () => <span>Relations</span>,
@@ -505,13 +515,43 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
             >
               <MagnifyingGlassCircleIconSolid />
             </IconButtonWithToolTip>
+            <IconButtonWithToolTip
+              placement='left'
+              text='copy'
+              size='large'
+              label='Copy Row'
+              disabled={info.getValue() === 'Uploading'}
+              clean
+              onClick={() => {
+                const copied = { ...info.row.original };
+                delete copied.accessToken;
+                handleCopy(copied);
+              }}
+            >
+              <ClipboardDocumentIconSolid className={`${copyRow} ? 'cursor-wait': 'cursor`} />
+            </IconButtonWithToolTip>
+            <IconButtonWithToolTip
+              onClick={() => {
+                onChunkView(info?.row?.original?.name as string);
+              }}
+              clean
+              placement='left'
+              label='chunktextaction'
+              text='View Chunks'
+              size='large'
+              disabled={info.getValue() === 'Uploading'}
+            >
+              <DocumentTextIconSolid />
+            </IconButtonWithToolTip>
           </>
         ),
-        header: () => <span>View</span>,
+        size: 300,
+        minSize: 180,
+        header: () => <span>Actions</span>,
         footer: (info) => info.column.id,
       }),
     ],
-    [filesData.length, statusFilter, filetypeFilter, llmtypeFilter, fileSourceFilter]
+    [filesData.length, statusFilter, filetypeFilter, llmtypeFilter, fileSourceFilter, isReadOnlyUser, colorMode]
   );
 
   const table = useReactTable({
@@ -641,19 +681,19 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
                   type: item?.fileType?.includes('.')
                     ? item?.fileType?.substring(1)?.toUpperCase() ?? 'None'
                     : item?.fileType?.toUpperCase() ?? 'None',
-                  NodesCount: item?.nodeCount ?? 0,
-                  processing: item?.processingTime ?? 'None',
-                  relationshipCount: item?.relationshipCount ?? 0,
+                  nodesCount: item?.nodeCount ?? 0,
+                  processingTotalTime: item?.processingTime ?? 'None',
+                  relationshipsCount: item?.relationshipCount ?? 0,
                   status: waitingFile ? 'Waiting' : getFileSourceStatus(item),
                   model: item?.model ?? model,
                   id: !waitingFile ? uuidv4() : waitingFile.id,
-                  source_url: item?.url != 'None' && item?.url != '' ? item.url : '',
+                  sourceUrl: item?.url != 'None' && item?.url != '' ? item.url : '',
                   fileSource: item?.fileSource ?? 'None',
                   gcsBucket: item?.gcsBucket,
                   gcsBucketFolder: item?.gcsBucketFolder,
                   errorMessage: item?.errorMessage,
-                  uploadprogess: item?.uploadprogress ?? 0,
-                  google_project_id: item?.gcsProjectId,
+                  uploadProgress: item?.uploadprogress ?? 0,
+                  googleProjectId: item?.gcsProjectId,
                   language: item?.language ?? '',
                   processingProgress:
                     item?.processed_chunk != undefined &&
@@ -661,7 +701,7 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
                     !isNaN(Math.floor((item?.processed_chunk / item?.total_chunks) * 100))
                       ? Math.floor((item?.processed_chunk / item?.total_chunks) * 100)
                       : undefined,
-                  access_token: item?.access_token ?? '',
+                  accessToken: item?.accessToken ?? '',
                   retryOption: item.retry_condition ?? '',
                   retryOptionStatus: false,
                 });
@@ -701,7 +741,7 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
   }, [connectionStatus, userCredentials]);
 
   useEffect(() => {
-    if (connectionStatus && filesData.length && onlyfortheFirstRender) {
+    if (connectionStatus && filesData.length && onlyfortheFirstRender && !isReadOnlyUser) {
       const processingFilesCount = filesData.filter((f) => f.status === 'Processing').length;
       if (processingFilesCount) {
         if (processingFilesCount === 1) {
@@ -718,7 +758,7 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
       }
       onlyfortheFirstRender = false;
     }
-  }, [connectionStatus, filesData.length]);
+  }, [connectionStatus, filesData.length, isReadOnlyUser]);
 
   const cancelHandler = async (fileName: string, id: string, fileSource: string) => {
     setFilesData((prevfiles) =>
@@ -799,10 +839,10 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
             return {
               ...curfile,
               status: status,
-              NodesCount: nodeCount,
+              nodesCount: nodeCount,
               relationshipCount: relationshipCount,
               model: model,
-              processing: processingTime?.toFixed(2),
+              processingTotalTime: processingTime?.toFixed(2),
               processingProgress: Math.floor((processed_chunk / total_chunks) * 100),
             };
           }
@@ -829,7 +869,7 @@ const FileTable = forwardRef<ChildRef, FileTableProps>((props, ref) => {
             return {
               ...curfile,
               status: status,
-              NodesCount: nodeCount,
+              nodesCount: nodeCount,
               relationshipCount: relationshipCount,
               processingProgress: Math.floor((processed_chunk / total_chunks) * 100),
             };
